@@ -95,7 +95,7 @@ class Ship {
     this.speed = speed;   // Constant speed
     // Create a white circle marker to represent the ship
     this.marker = L.circleMarker([this.lat, this.lng], {
-      radius: 3,       // Smaller radius for thousands of ships
+      radius: 1,       // Smaller radius for thousands of ships
       color: 'white',
       fillColor: 'white',
       fillOpacity: 1
@@ -114,7 +114,7 @@ class Ship {
 
 // Create an array to hold the ships
 var ships = [];
-var numShips = 200; // or however many you want
+var numShips = 100; // or however many you want
 
 for (var i = 0; i < numShips; i++) {
   var point = randomPointInPolygon(polygon);

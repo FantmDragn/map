@@ -44,45 +44,47 @@ function calculateDistance(lat1, lng1, lat2, lng2) {
 // We define our triangle in a local coordinate system (in meters) relative to its centroid.
 // Updated configuration for a slightly larger triangle:
 function getAircraftTrianglePoints(lat, lng, course) {
-  // Increased dimensions (in meters)
-  var d = 833.33; // distance from centroid to tip (was 666.67)
-  var e = d / 2;  // half of the tip-to-base distance (~416.67)
-  var f = 375;    // half of the base width (was 300)
+  // Define dimensions (in meters)
+  var d = 833.33;    // Distance from centroid to tip
+  var b = 375;       // Half the base width
+  var a = d / 2;     // Base is located at -a (so that centroid is at (0,0))
+  
+  // Define triangle vertices in local coordinates relative to the centroid.
+  // With no rotation, the tip is at (0, d) – meaning directly north,
+  // and the base vertices are at (-b, -a) and (b, -a).
+  var localTip   = { x: 0,   y: d };
+  var localLeft  = { x: -b,  y: -a };
+  var localRight = { x: b,   y: -a };
 
-  // Define triangle vertices in local (x, y) coordinates relative to centroid.
-  // x-axis is the forward direction (along the course), y-axis is to the right.
-  var localTip = { x: d, y: 0 };
-  var localLeft = { x: -e, y: -f };
-  var localRight = { x: -e, y: f };
-
-  // Rotate each point by the course angle.
-  var theta = course * Math.PI / 180;
+  // Rotate each point by -course radians so that the triangle points in the correct direction.
+  var theta = -course * Math.PI / 180;
   function rotate(point) {
     return {
       x: point.x * Math.cos(theta) - point.y * Math.sin(theta),
       y: point.x * Math.sin(theta) + point.y * Math.cos(theta)
     };
   }
-  var tipRot = rotate(localTip);
-  var leftRot = rotate(localLeft);
+  var tipRot   = rotate(localTip);
+  var leftRot  = rotate(localLeft);
   var rightRot = rotate(localRight);
 
-  // Convert each rotated offset (in meters) to a new lat/lng using the move function.
+  // Convert each rotated offset (in meters) to a new lat/lng.
   function offsetToLatLng(offset) {
     var distance = Math.sqrt(offset.x * offset.x + offset.y * offset.y);
-    // Calculate the angle of the offset relative to east.
+    // Calculate the angle relative to east.
     var angleFromEast = Math.atan2(offset.y, offset.x) * 180 / Math.PI;
-    // Convert this to a bearing relative to north.
+    // Convert to a bearing relative to north.
     var offsetBearing = (90 - angleFromEast + 360) % 360;
     return move(lat, lng, offsetBearing, distance);
   }
   
-  var tipPos = offsetToLatLng(tipRot);
-  var leftPos = offsetToLatLng(leftRot);
+  var tipPos   = offsetToLatLng(tipRot);
+  var leftPos  = offsetToLatLng(leftRot);
   var rightPos = offsetToLatLng(rightRot);
   
   return [tipPos, leftPos, rightPos];
 }
+
 
 // Aircraft class representing one simulated aircraft.
 class Aircraft {
@@ -150,7 +152,7 @@ var fresno = { lat: 36.7378, lng: -119.7871 };
 // Create 3 aircraft for each route.
 // We'll space them out by adding an increasing initial offset (e.g., 10 km apart).
 function createAircraft(routeStart, routeEnd, count) {
-  var spacing = 10000; // spacing in meters (10 km) between each aircraft along the route
+  var spacing = 100000; // spacing in meters (10 km) between each aircraft along the route
   for (var i = 0; i < count; i++) {
     // Optional small random variation at the departure point.
     var offsetLat = routeStart.lat + (Math.random() - 0.5) * 0.005;
