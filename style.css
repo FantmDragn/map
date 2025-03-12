@@ -17,5 +17,8 @@
   width: 34px;
   height: 34px;
   background-size: 100% 100%; /* Makes the background image fully fill the container */
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
   cursor: pointer;
 }
