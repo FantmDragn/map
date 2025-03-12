@@ -38,11 +38,23 @@ var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/
           map.removeLayer(darkLayer);
           map.addLayer(lightLayer);
           mapContainer.classList.remove('dark-mode');
+          // Update ship markers: add a black ring (stroke) around the white dot
+          if (window.ships) {
+            ships.forEach(function(ship) {
+              ship.marker.setStyle({ color: 'black', fillColor: 'white' });
+            });
+          }
         } else {
           // Switch to dark mode: remove light layer and add dark layer with CSS class
           map.removeLayer(lightLayer);
           map.addLayer(darkLayer);
           mapContainer.classList.add('dark-mode');
+          // Update ship markers: revert to a white outline (or remove the ring)
+          if (window.ships) {
+            ships.forEach(function(ship) {
+              ship.marker.setStyle({ color: 'white', fillColor: 'white' });
+            });
+          }
         }
       };
       return container;
