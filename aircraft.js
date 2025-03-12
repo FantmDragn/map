@@ -45,8 +45,8 @@ function calculateDistance(lat1, lng1, lat2, lng2) {
 // Updated configuration for a slightly larger triangle:
 function getAircraftTrianglePoints(lat, lng, course) {
   // Define dimensions (in meters)
-  var d = 833.33;    // Distance from centroid to tip
-  var b = 375;       // Half the base width
+  var d = 10000;    // Distance from centroid to tip
+  var b = 4500;       // Half the base width
   var a = d / 2;     // Base is located at -a (so that centroid is at (0,0))
   
   // Define triangle vertices in local coordinates relative to the centroid.
