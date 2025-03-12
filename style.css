@@ -10,3 +10,11 @@
     filter: brightness(1.8);
   }
   
+  /* Styling for the custom toggle control */
+.leaflet-control-custom {
+  background-color: white;
+  background-size: 30px 30px;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+}
