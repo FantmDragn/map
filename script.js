@@ -24,7 +24,7 @@ var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/
       var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
       
       // Use a map icon (example icon URL; feel free to replace with your own)
-      container.style.backgroundImage = "url('map/images/icon.png')";
+      container.style.backgroundImage = "url('/images/icon.png')";
       container.title = "Toggle map theme";
   
       // Prevent clicks on the control from propagating to the map
