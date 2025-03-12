@@ -87,6 +87,9 @@ var polygon = [
 ];
 
 // Ship class remains the same
+// Define a scaling factor for the speed line length (adjust this value to suit your needs)
+var SPEED_LINE_SCALE = 100; // For example, 100 meters per 1 m/s of speed
+
 class Ship {
   constructor(lat, lng, course, speed) {
     this.lat = lat;
@@ -95,26 +98,53 @@ class Ship {
     this.speed = speed;   // Constant speed
     // Create a white circle marker to represent the ship
     this.marker = L.circleMarker([this.lat, this.lng], {
-      radius: 1,       // Smaller radius for thousands of ships
+      radius: 2,
       color: 'white',
       fillColor: 'white',
       fillOpacity: 1
     }).addTo(map);
+    // Initialize the speed line (no line at start)
+    this.speedLine = null;
   }
   
-  // Update ship's position based on its constant course and speed
+  // Update the ship's position and the speed indicator line
   update(dt) {
     var distance = this.speed * dt;
     var newPos = move(this.lat, this.lng, this.course, distance);
     this.lat = newPos[0];
     this.lng = newPos[1];
     this.marker.setLatLng([this.lat, this.lng]);
+    
+    // If speed is greater than zero, create or update the speed line
+    if (this.speed > 0) {
+      // Calculate the length of the line based on speed and scale factor
+      var lineLength = this.speed * SPEED_LINE_SCALE;
+      // Compute the endpoint using the move() function
+      var endPoint = move(this.lat, this.lng, this.course, lineLength);
+      if (this.speedLine === null) {
+        // Create the polyline and add it to the map
+        this.speedLine = L.polyline([[this.lat, this.lng], endPoint], {
+          color: 'white',
+          weight: 2
+        }).addTo(map);
+      } else {
+        // Update the polyline endpoints
+        this.speedLine.setLatLngs([[this.lat, this.lng], endPoint]);
+      }
+    } else {
+      // Remove the line if speed is zero
+      if (this.speedLine) {
+        map.removeLayer(this.speedLine);
+        this.speedLine = null;
+      }
+    }
   }
 }
 
+
 // Create an array to hold the ships
 var ships = [];
-var numShips = 100; // or however many you want
+var numShips = 150; // or however many you want
 
 for (var i = 0; i < numShips; i++) {
   var point = randomPointInPolygon(polygon);
@@ -131,3 +161,4 @@ setInterval(function() {
     ship.update(1); // dt = 1 second
   });
 }, 1000);
+
