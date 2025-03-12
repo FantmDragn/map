@@ -7,6 +7,6 @@
   
   /* Apply brightness filter to lighten the map tiles */
   .leaflet-tile {
-    filter: brightness(1.2);
+    filter: brightness(1.5);
   }
   
