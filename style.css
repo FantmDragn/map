@@ -1,0 +1,12 @@
+/* Ensure the map takes up the full viewport height */
+#map {
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Apply brightness filter to lighten the map tiles */
+  .leaflet-tile {
+    filter: brightness(1.2);
+  }
+  
