@@ -24,7 +24,7 @@ var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/
       var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
       
       // Use a map icon (example icon URL; feel free to replace with your own)
-      container.style.backgroundImage = "url('https://cdn-icons-png.flaticon.com/512/69/69993.png')";
+      container.style.backgroundImage = "url('map/images/icon.png')";
       container.title = "Toggle map theme";
   
       // Prevent clicks on the control from propagating to the map
@@ -32,12 +32,17 @@ var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/
       
       // Toggle between darkLayer and lightLayer on click
       container.onclick = function() {
+        var mapContainer = document.getElementById('map');
         if (map.hasLayer(darkLayer)) {
+          // Switch to light mode: remove dark layer and its associated CSS class
           map.removeLayer(darkLayer);
           map.addLayer(lightLayer);
+          mapContainer.classList.remove('dark-mode');
         } else {
+          // Switch to dark mode: remove light layer and add dark layer with CSS class
           map.removeLayer(lightLayer);
           map.addLayer(darkLayer);
+          mapContainer.classList.add('dark-mode');
         }
       };
       return container;

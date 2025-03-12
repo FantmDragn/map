@@ -1,16 +1,16 @@
 /* Ensure the map takes up the full viewport height */
 #map {
-    height: 100vh;
-    margin: 0;
-    padding: 0;
-  }
-  
-  /* Apply brightness filter to lighten the map tiles */
-  .leaflet-tile {
-    filter: brightness(1.8);
-  }
-  
-  /* Styling for the custom toggle control */
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Only apply the brightness filter when in dark mode */
+.dark-mode .leaflet-tile {
+  filter: brightness(1.9);
+}
+
+/* Styling for the custom toggle control */
 .leaflet-control-custom {
   background-color: white;
   background-size: 30px 30px;
