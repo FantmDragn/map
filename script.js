@@ -9,8 +9,8 @@ var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/
   
   // Initialize the map with the dark layer as the default
   var map = L.map('map', {
-      center: [40.7128, -74.0060],
-      zoom: 13,
+      center: [37.7658, -122.7048],
+      zoom: 5,
       layers: [darkLayer]
   });
   

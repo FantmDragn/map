@@ -42,8 +42,8 @@ function move(lat, lng, bearing, distance) {
   // Create an array to hold the ships
   var ships = [];
   // Use a base coordinate (for example, New York City)
-  var baseLat = 40.7128;
-  var baseLng = -74.0060;
+  var baseLat = 37.7658;
+  var baseLng = -122.7048;
   
   // Create 10 ships with random starting positions, courses, and speeds
   for (var i = 0; i < 10; i++) {
