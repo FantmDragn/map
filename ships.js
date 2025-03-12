@@ -114,7 +114,7 @@ class Ship {
 
 // Create an array to hold the ships
 var ships = [];
-var numShips = 500; // or however many you want
+var numShips = 200; // or however many you want
 
 for (var i = 0; i < numShips; i++) {
   var point = randomPointInPolygon(polygon);

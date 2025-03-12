@@ -38,10 +38,16 @@ var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/
           map.removeLayer(darkLayer);
           map.addLayer(lightLayer);
           mapContainer.classList.remove('dark-mode');
-          // Update ship markers: add a black ring (stroke) around the white dot
+          // Update ship markers: add a black outline
           if (window.ships) {
             ships.forEach(function(ship) {
               ship.marker.setStyle({ color: 'black', fillColor: 'white' });
+            });
+          }
+          // Update aircraft markers: add a black outline for triangles
+          if (window.aircrafts) {
+            aircrafts.forEach(function(ac) {
+              ac.marker.setStyle({ color: 'black', fillColor: 'white' });
             });
           }
         } else {
@@ -49,14 +55,21 @@ var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/
           map.removeLayer(lightLayer);
           map.addLayer(darkLayer);
           mapContainer.classList.add('dark-mode');
-          // Update ship markers: revert to a white outline (or remove the ring)
+          // Update ship markers: revert to a white outline
           if (window.ships) {
             ships.forEach(function(ship) {
               ship.marker.setStyle({ color: 'white', fillColor: 'white' });
             });
           }
+          // Update aircraft markers: revert outline to white
+          if (window.aircrafts) {
+            aircrafts.forEach(function(ac) {
+              ac.marker.setStyle({ color: 'white', fillColor: 'white' });
+            });
+          }
         }
       };
+      
       return container;
     }
   });
