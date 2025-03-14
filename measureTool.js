@@ -97,7 +97,7 @@
       container.style.backgroundColor = 'white';
       container.title = "Measure distance";
       // Replace the "M" with a ruler icon.
-      container.innerHTML = "<img src="url('images/ruler.png')" alt='Ruler' style='width:20px;height:20px;'/>";
+      container.innerHTML = "<img src='images/ruler.png' alt='Ruler' style='width:20px;height:20px;'/>";
       
       L.DomEvent.disableClickPropagation(container);
       
