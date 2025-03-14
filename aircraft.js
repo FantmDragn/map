@@ -1,3 +1,5 @@
+// aircraft.js
+
 // Move function: Given lat, lng, bearing (degrees) and distance (meters),
 // returns new [lat, lng].
 function move(lat, lng, bearing, distance) {
@@ -13,7 +15,7 @@ function move(lat, lng, bearing, distance) {
   return [lat2 / rad, lng2 / rad];
 }
 
-// Helper: Calculate bearing from one coordinate to another.
+// Helper: Calculate bearing (degrees) from one coordinate to another.
 function calculateBearing(lat1, lng1, lat2, lng2) {
   var rad = Math.PI / 180;
   var phi1 = lat1 * rad;
@@ -26,78 +28,62 @@ function calculateBearing(lat1, lng1, lat2, lng2) {
   return (theta * 180 / Math.PI + 360) % 360;
 }
 
-// Helper: Calculate distance (in meters) between two coordinates using the Haversine formula.
+// Helper: Calculate distance (meters) between two coordinates using the Haversine formula.
 function calculateDistance(lat1, lng1, lat2, lng2) {
   var R = 6371000;
   var rad = Math.PI / 180;
   var dLat = (lat2 - lat1) * rad;
   var dLng = (lng2 - lng1) * rad;
-  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+  var a = Math.sin(dLat / 2) ** 2 +
           Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
-          Math.sin(dLng / 2) * Math.sin(dLng / 2);
+          Math.sin(dLng / 2) ** 2;
   var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
 
-// Helper: Given an aircraft's center (its current position) and course,
-// compute three vertices (lat,lng) for a triangle representing the aircraft.
-// We define our triangle in a local coordinate system (in meters) relative to its centroid.
-// Updated configuration for a slightly larger triangle:
-function getAircraftTrianglePoints(lat, lng, course) {
-  // Define dimensions (in meters)
-  var d = 10000;    // Distance from centroid to tip
-  var b = 4500;       // Half the base width
-  var a = d / 2;     // Base is located at -a (so that centroid is at (0,0))
+/* 
+  Helper: Generate an aircraft icon (top half of a circle with a dot at the bottom)
+  that does not rotate based on course.
   
-  // Define triangle vertices in local coordinates relative to the centroid.
-  // With no rotation, the tip is at (0, d) – meaning directly north,
-  // and the base vertices are at (-b, -a) and (b, -a).
-  var localTip   = { x: 0,   y: d };
-  var localLeft  = { x: -b,  y: -a };
-  var localRight = { x: b,   y: -a };
-
-  // Rotate each point by -course radians so that the triangle points in the correct direction.
-  var theta = -course * Math.PI / 180;
-  function rotate(point) {
-    return {
-      x: point.x * Math.cos(theta) - point.y * Math.sin(theta),
-      y: point.x * Math.sin(theta) + point.y * Math.cos(theta)
-    };
-  }
-  var tipRot   = rotate(localTip);
-  var leftRot  = rotate(localLeft);
-  var rightRot = rotate(localRight);
-
-  // Convert each rotated offset (in meters) to a new lat/lng.
-  function offsetToLatLng(offset) {
-    var distance = Math.sqrt(offset.x * offset.x + offset.y * offset.y);
-    // Calculate the angle relative to east.
-    var angleFromEast = Math.atan2(offset.y, offset.x) * 180 / Math.PI;
-    // Convert to a bearing relative to north.
-    var offsetBearing = (90 - angleFromEast + 360) % 360;
-    return move(lat, lng, offsetBearing, distance);
-  }
-  
-  var tipPos   = offsetToLatLng(tipRot);
-  var leftPos  = offsetToLatLng(leftRot);
-  var rightPos = offsetToLatLng(rightRot);
-  
-  return [tipPos, leftPos, rightPos];
+  The SVG is now 20x20 with a viewBox "0 0 20 20". The arc is drawn from (0,16) to (20,16)
+  so that its top is at y=6, and the dot is placed at (10,16). The iconAnchor is [10,16]
+  so that the marker is anchored at the dot.
+*/
+function getAircraftIcon() {
+  var mapContainer = document.getElementById('map');
+  var isDarkMode = mapContainer.classList.contains('dark-mode');
+  var strokeColor = isDarkMode ? 'white' : 'black';
+  return L.divIcon({
+    html: `
+      <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <!-- Draw the top half of a circle using a quadratic Bézier curve -->
+        <path d="M0,10 Q10,0 20,10" fill="none" stroke="${strokeColor}" stroke-width="3" stroke-linecap="round"/>
+        <!-- Dot at the bottom center of the semicircle -->
+        <circle cx="10" cy="10" r="2" fill="${strokeColor}" />
+      </svg>
+    `,
+    className: '',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
+  });
 }
 
 
 // Aircraft class representing one simulated aircraft.
 class Aircraft {
-  // Added an optional initialOffset parameter (in meters) to space out aircraft along the route.
+  // initialOffset (meters) spaces aircraft along the route.
   constructor(startLat, startLng, endLat, endLng, speed, initialOffset = 0) {
+    // Save starting and destination coordinates.
     this.startLat = startLat;
     this.startLng = startLng;
     this.endLat = endLat;
     this.endLng = endLng;
     this.speed = speed; // in m/s
-    // Compute course from start to destination.
+    
+    // Compute the course from start to destination.
     this.course = calculateBearing(startLat, startLng, endLat, endLng);
-    // Adjust starting position along the route based on initialOffset.
+    
+    // Set the current position; apply an initialOffset if provided.
     if (initialOffset > 0) {
       var pos = move(startLat, startLng, this.course, initialOffset);
       this.currentLat = pos[0];
@@ -106,9 +92,9 @@ class Aircraft {
       this.currentLat = startLat;
       this.currentLng = startLng;
     }
-    // Create a polygon marker (triangle) for the aircraft.
-    var points = getAircraftTrianglePoints(this.currentLat, this.currentLng, this.course);
-    this.marker = L.polygon(points, { color: 'white', fillColor: 'white', fillOpacity: 1 }).addTo(map);
+    
+    // Create the marker using the static aircraft icon.
+    this.marker = L.marker([this.currentLat, this.currentLng], { icon: getAircraftIcon() }).addTo(map);
   }
   
   update(dt) {
@@ -117,26 +103,24 @@ class Aircraft {
     this.currentLat = newPos[0];
     this.currentLng = newPos[1];
     
-    // Check if the aircraft is near its destination.
+    // If near destination, reset to the start.
     var distToDest = calculateDistance(this.currentLat, this.currentLng, this.endLat, this.endLng);
     if (distToDest < this.speed * dt) {
-      // Reset to the start if the destination is reached.
       this.currentLat = this.startLat;
       this.currentLng = this.startLng;
-      // Recalculate course in case starting point was slightly offset.
       this.course = calculateBearing(this.startLat, this.startLng, this.endLat, this.endLng);
     }
     
-    // Update the marker's triangle to the new position and maintain the course orientation.
-    var newPoints = getAircraftTrianglePoints(this.currentLat, this.currentLng, this.course);
-    this.marker.setLatLngs(newPoints);
+    // Update the marker's position and icon.
+    this.marker.setLatLng([this.currentLat, this.currentLng]);
+    this.marker.setIcon(getAircraftIcon());
   }
 }
 
 // Create an array to hold all aircraft.
 var aircrafts = [];
 
-// Define routes with approximate coordinates:
+// Define routes with approximate coordinates.
 // Seattle to Hawaii (Honolulu)
 var seattle = { lat: 47.6062, lng: -122.3321 };
 var hawaii = { lat: 21.3069, lng: -157.8583 };
@@ -145,19 +129,17 @@ var hawaii = { lat: 21.3069, lng: -157.8583 };
 var losAngeles = { lat: 34.0522, lng: -118.2437 };
 var sanFrancisco = { lat: 37.7749, lng: -122.4194 };
 
-// Fresno to Los Angeles
+// Fresno to Los Angeles (destination: losAngeles)
 var fresno = { lat: 36.7378, lng: -119.7871 };
-// Re-use losAngeles for destination.
 
-// Create 3 aircraft for each route.
-// We'll space them out by adding an increasing initial offset (e.g., 10 km apart).
+// Function to create aircraft along a route.
 function createAircraft(routeStart, routeEnd, count) {
   var spacing = 100000; // spacing in meters (10 km) between each aircraft along the route
   for (var i = 0; i < count; i++) {
-    // Optional small random variation at the departure point.
+    // Apply a small random variation at the departure point.
     var offsetLat = routeStart.lat + (Math.random() - 0.5) * 0.005;
     var offsetLng = routeStart.lng + (Math.random() - 0.5) * 0.005;
-    // Choose a speed between 150 m/s and 250 m/s (typical for aircraft).
+    // Choose a speed between 150 m/s and 250 m/s.
     var speed = 150 + Math.random() * 100;
     // Each subsequent aircraft gets a larger initial offset.
     var initialOffset = i * spacing;
