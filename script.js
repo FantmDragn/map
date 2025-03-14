@@ -77,3 +77,29 @@ var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/
   // Add the toggle control to the map
   map.addControl(new ToggleControl());
   
+  // Global flag to track which icon set is active.
+var useMilStdIcons = false;
+
+// Define default icons
+var defaultShipIcon = L.icon({
+  iconUrl: 'images/ship_default.png', // path to your default ship icon
+  iconSize: [24, 24],
+  iconAnchor: [12, 12]
+});
+var defaultAircraftIcon = L.icon({
+  iconUrl: 'images/aircraft_default.png', // path to your default aircraft icon
+  iconSize: [24, 24],
+  iconAnchor: [12, 12]
+});
+
+// Define MIL-STD-2525C icons
+var milStdShipIcon = L.icon({
+  iconUrl: 'images/ship_mil_std.png', // path to your MIL-STD-2525C ship icon
+  iconSize: [24, 24],
+  iconAnchor: [12, 12]
+});
+var milStdAircraftIcon = L.icon({
+  iconUrl: 'images/aircraft_mil_std.png', // path to your MIL-STD-2525C aircraft icon
+  iconSize: [24, 24],
+  iconAnchor: [12, 12]
+});

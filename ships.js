@@ -12,6 +12,31 @@ function move(lat, lng, bearing, distance) {
   return [lat2 / rad, lng2 / rad];
 }
 
+// Square icon for dark mode: 10x10 square with a white border and a centered dot
+var squareIconDark = L.divIcon({
+  html: "<div style='width:10px; height:10px; position: relative; background-color:transparent; border:1px solid white;'>" +
+        "<div style='width:3px; height:3px; background-color:white; border-radius:50%; " +
+        "position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);'></div>" +
+        "</div>",
+  className: '',
+  iconSize: [10, 10],
+  iconAnchor: [5, 5]
+});
+
+// Square icon for light mode: 10x10 square with a black border and a centered dot
+var squareIconLight = L.divIcon({
+  html: "<div style='width:10px; height:10px; position: relative; background-color:transparent; border:1px solid black;'>" +
+        "<div style='width:3px; height:3px; background-color:black; border-radius:50%; " +
+        "position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);'></div>" +
+        "</div>",
+  className: '',
+  iconSize: [10, 10],
+  iconAnchor: [5, 5]
+});
+
+
+
+
 // Ray-casting algorithm to check if a point is inside a polygon
 // Our polygon and points are defined as [lat, lng] but the algorithm works with x = lng, y = lat.
 function pointInPolygon(point, vs) {
@@ -96,49 +121,80 @@ class Ship {
     this.lng = lng;
     this.course = course; // Constant course
     this.speed = speed;   // Constant speed
-    // Create a white circle marker to represent the ship
-    this.marker = L.circleMarker([this.lat, this.lng], {
-      radius: 2,
-      color: 'white',
-      fillColor: 'white',
-      fillOpacity: 1
-    }).addTo(map);
+    
+    // Determine which icon to use based on the map's theme.
+    var mapContainer = document.getElementById('map');
+    var isDarkMode = mapContainer.classList.contains('dark-mode');
+    var defaultIcon = isDarkMode ? squareIconDark : squareIconLight;
+    
+    // Create an L.marker with the custom square icon.
+    this.marker = L.marker([this.lat, this.lng], { icon: defaultIcon }).addTo(map);
+    
     // Initialize the speed line (no line at start)
     this.speedLine = null;
   }
   
   // Update the ship's position and the speed indicator line
   update(dt) {
+    // Update ship's position.
     var distance = this.speed * dt;
     var newPos = move(this.lat, this.lng, this.course, distance);
     this.lat = newPos[0];
     this.lng = newPos[1];
     this.marker.setLatLng([this.lat, this.lng]);
+  
+    // Check current zoom level.
+    var currentZoom = map.getZoom();
+    // If zoomed out too far, remove/hide the line and exit early.
+    if (currentZoom < 15) {
+      if (this.speedLine) {
+        map.removeLayer(this.speedLine);
+        this.speedLine = null;
+      }
+      return; // Skip drawing the line.
+    }
+  
+    // Fixed line length in pixels.
+    var lineLengthPixels = 12;
     
-    // If speed is greater than zero, create or update the speed line
+    // Convert the ship's position to pixel coordinates.
+    var shipLatLng = L.latLng(this.lat, this.lng);
+    var shipPoint = map.latLngToLayerPoint(shipLatLng);
+    
+    // Calculate the pixel offset for the entire line based on the ship's course.
+    var angleRad = this.course * Math.PI / 180;
+    var offsetX = lineLengthPixels * Math.cos(angleRad);
+    var offsetY = lineLengthPixels * Math.sin(angleRad);
+    
+    // We want the ship marker to be at the forward end (the tip).
+    var forwardPointLayer = shipPoint;  // ship marker is at forward endpoint.
+    var reversePointLayer = L.point(shipPoint.x - offsetX, shipPoint.y - offsetY);
+    
+    // Convert these pixel points back to geographic coordinates.
+    var forwardLatLng = map.layerPointToLatLng(forwardPointLayer);
+    var reverseLatLng = map.layerPointToLatLng(reversePointLayer);
+    
+    // Create or update the bearing line.
     if (this.speed > 0) {
-      // Calculate the length of the line based on speed and scale factor
-      var lineLength = this.speed * SPEED_LINE_SCALE;
-      // Compute the endpoint using the move() function
-      var endPoint = move(this.lat, this.lng, this.course, lineLength);
       if (this.speedLine === null) {
-        // Create the polyline and add it to the map
-        this.speedLine = L.polyline([[this.lat, this.lng], endPoint], {
+        this.speedLine = L.polyline([reverseLatLng, forwardLatLng], {
           color: 'white',
           weight: 2
         }).addTo(map);
       } else {
-        // Update the polyline endpoints
-        this.speedLine.setLatLngs([[this.lat, this.lng], endPoint]);
+        this.speedLine.setLatLngs([reverseLatLng, forwardLatLng]);
       }
     } else {
-      // Remove the line if speed is zero
       if (this.speedLine) {
         map.removeLayer(this.speedLine);
         this.speedLine = null;
       }
     }
   }
+  
+  
+  
+  
 }
 
 
