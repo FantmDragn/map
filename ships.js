@@ -34,9 +34,6 @@ var squareIconLight = L.divIcon({
   iconAnchor: [5, 5]
 });
 
-
-
-
 // Ray-casting algorithm to check if a point is inside a polygon
 // Our polygon and points are defined as [lat, lng] but the algorithm works with x = lng, y = lat.
 function pointInPolygon(point, vs) {
@@ -119,83 +116,84 @@ class Ship {
   constructor(lat, lng, course, speed) {
     this.lat = lat;
     this.lng = lng;
-    this.course = course; // Constant course
-    this.speed = speed;   // Constant speed
-    
-    // Determine which icon to use based on the map's theme.
+    this.course = course;
+    this.speed = speed;
+
     var mapContainer = document.getElementById('map');
     var isDarkMode = mapContainer.classList.contains('dark-mode');
     var defaultIcon = isDarkMode ? squareIconDark : squareIconLight;
-    
-    // Create an L.marker with the custom square icon.
+
     this.marker = L.marker([this.lat, this.lng], { icon: defaultIcon }).addTo(map);
-    
-    // Initialize the speed line (no line at start)
+
+    // Initialize the speed line
     this.speedLine = null;
+
+    // Initialize track label
+    this.trackLabel = L.marker([this.lat, this.lng], {
+      icon: L.divIcon({
+        className: 'track-label',
+        html: `<div class="track-info">Course: ${this.course.toFixed(1)}°<br>Speed: ${this.speed.toFixed(1)} m/s</div>`,
+        iconSize: [100, 30]
+      }),
+      interactive: false
+    }).addTo(map);
+    this.trackLabel.setOpacity(0); // Initially hidden
   }
-  
-  // Update the ship's position and the speed indicator line
+
   update(dt) {
-    // Update ship's position.
     var distance = this.speed * dt;
     var newPos = move(this.lat, this.lng, this.course, distance);
     this.lat = newPos[0];
     this.lng = newPos[1];
     this.marker.setLatLng([this.lat, this.lng]);
-  
-    // Check current zoom level.
-    var currentZoom = map.getZoom();
-    // If zoomed out too far, remove/hide the line and exit early.
-    if (currentZoom < 15) {
-      if (this.speedLine) {
-        map.removeLayer(this.speedLine);
-        this.speedLine = null;
-      }
-      return; // Skip drawing the line.
-    }
-  
-    // Fixed line length in pixels.
-    var lineLengthPixels = 12;
-    
-    // Convert the ship's position to pixel coordinates.
-    var shipLatLng = L.latLng(this.lat, this.lng);
-    var shipPoint = map.latLngToLayerPoint(shipLatLng);
-    
-    // Calculate the pixel offset for the entire line based on the ship's course.
-    var angleRad = this.course * Math.PI / 180;
-    var offsetX = lineLengthPixels * Math.cos(angleRad);
-    var offsetY = lineLengthPixels * Math.sin(angleRad);
-    
-    // We want the ship marker to be at the forward end (the tip).
-    var forwardPointLayer = shipPoint;  // ship marker is at forward endpoint.
-    var reversePointLayer = L.point(shipPoint.x - offsetX, shipPoint.y - offsetY);
-    
-    // Convert these pixel points back to geographic coordinates.
-    var forwardLatLng = map.layerPointToLatLng(forwardPointLayer);
-    var reverseLatLng = map.layerPointToLatLng(reversePointLayer);
-    
-    // Create or update the bearing line.
-    if (this.speed > 0) {
-      if (this.speedLine === null) {
-        this.speedLine = L.polyline([reverseLatLng, forwardLatLng], {
-          color: 'white',
-          weight: 2
-        }).addTo(map);
-      } else {
-        this.speedLine.setLatLngs([reverseLatLng, forwardLatLng]);
-      }
+
+    var zoomLevel = map.getZoom(); // ✅ Define zoomLevel before use
+
+    // Show track label & bearing line only when zoom level is 15 or higher
+    if (zoomLevel >= 8) {
+        var labelOffset = 0.0005; // Adjust this for more spacing
+        var labelPos = move(this.lat, this.lng, this.course , labelOffset); // ✅ Move label to the right
+
+        this.trackLabel.setLatLng(labelPos);
+        this.trackLabel.setOpacity(1);
+
+        // Generate the bearing line
+        var lineLengthPixels = 12;
+        var shipLatLng = L.latLng(this.lat, this.lng);
+        var shipPoint = map.latLngToLayerPoint(shipLatLng);
+
+        var angleRad = this.course * Math.PI / 180;
+        var offsetX = lineLengthPixels * Math.cos(angleRad);
+        var offsetY = lineLengthPixels * Math.sin(angleRad);
+
+        var forwardPointLayer = shipPoint;
+        var reversePointLayer = L.point(shipPoint.x - offsetX, shipPoint.y - offsetY);
+
+        var forwardLatLng = map.layerPointToLatLng(forwardPointLayer);
+        var reverseLatLng = map.layerPointToLatLng(reversePointLayer);
+
+        if (this.speed > 0) {
+            if (this.speedLine === null) {
+                this.speedLine = L.polyline([reverseLatLng, forwardLatLng], {
+                    color: 'white',
+                    weight: 2
+                }).addTo(map);
+            } else {
+                this.speedLine.setLatLngs([reverseLatLng, forwardLatLng]);
+            }
+        }
     } else {
-      if (this.speedLine) {
-        map.removeLayer(this.speedLine);
-        this.speedLine = null;
-      }
+        this.trackLabel.setOpacity(0); // Hide track label
+        if (this.speedLine) {
+            map.removeLayer(this.speedLine); // Remove bearing line
+            this.speedLine = null;
+        }
     }
-  }
-  
-  
-  
-  
 }
+
+
+}
+
 
 
 // Create an array to hold the ships
