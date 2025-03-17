@@ -128,16 +128,17 @@ class Ship {
     // Initialize the speed line
     this.speedLine = null;
 
-    // Initialize track label
     this.trackLabel = L.marker([this.lat, this.lng], {
       icon: L.divIcon({
         className: 'track-label',
         html: `<div class="track-info">Course: ${this.course.toFixed(1)}°<br>Speed: ${this.speed.toFixed(1)} m/s</div>`,
-        iconSize: [100, 30]
+        iconSize: [100, 30], // Width and height of the label box
+        iconAnchor: [-10, 15] // Moves the label box to the right of the ship marker
       }),
       interactive: false
     }).addTo(map);
     this.trackLabel.setOpacity(0); // Initially hidden
+    
   }
 
   update(dt) {
@@ -147,30 +148,23 @@ class Ship {
     this.lng = newPos[1];
     this.marker.setLatLng([this.lat, this.lng]);
 
-    var zoomLevel = map.getZoom(); // ✅ Define zoomLevel before use
+    var zoomLevel = map.getZoom(); // ✅ Ensure zoomLevel is defined
 
-    // Show track label & bearing line only when zoom level is 15 or higher
     if (zoomLevel >= 8) {
-        var labelOffset = 0.0005; // Adjust this for more spacing
-        var labelPos = move(this.lat, this.lng, this.course , labelOffset); // ✅ Move label to the right
+        var labelOffsetDegrees = 0.002; // ✅ Moves the label to the right (adjust for spacing)
 
-        this.trackLabel.setLatLng(labelPos);
-        this.trackLabel.setOpacity(1);
+        // ✅ Set track info **static** to the right of the ship marker
+        var labelLat = this.lat;  // No vertical shift
+        var labelLng = this.lng + labelOffsetDegrees;  // Always to the right
 
-        // Generate the bearing line
-        var lineLengthPixels = 12;
-        var shipLatLng = L.latLng(this.lat, this.lng);
-        var shipPoint = map.latLngToLayerPoint(shipLatLng);
+        // Update track label position
+        this.trackLabel.setLatLng([labelLat, labelLng]);
+        this.trackLabel.setOpacity(1); // ✅ Make label visible
 
-        var angleRad = this.course * Math.PI / 180;
-        var offsetX = lineLengthPixels * Math.cos(angleRad);
-        var offsetY = lineLengthPixels * Math.sin(angleRad);
-
-        var forwardPointLayer = shipPoint;
-        var reversePointLayer = L.point(shipPoint.x - offsetX, shipPoint.y - offsetY);
-
-        var forwardLatLng = map.layerPointToLatLng(forwardPointLayer);
-        var reverseLatLng = map.layerPointToLatLng(reversePointLayer);
+        // Generate the bearing line (same as before)
+        var lineOffsetMeters = 1200; // Adjust for longer line
+        var forwardLatLng = move(this.lat, this.lng, this.course, lineOffsetMeters);
+        var reverseLatLng = move(this.lat, this.lng, this.course + 180, lineOffsetMeters / 2); // Shorter tail
 
         if (this.speed > 0) {
             if (this.speedLine === null) {
@@ -190,6 +184,7 @@ class Ship {
         }
     }
 }
+
 
 
 }

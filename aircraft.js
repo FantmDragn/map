@@ -53,37 +53,36 @@ function getAircraftIcon() {
   var mapContainer = document.getElementById('map');
   var isDarkMode = mapContainer.classList.contains('dark-mode');
   var strokeColor = isDarkMode ? 'white' : 'black';
+
   return L.divIcon({
     html: `
-      <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-        <!-- Draw the top half of a circle using a quadratic Bézier curve -->
-        <path d="M0,10 Q10,0 20,10" fill="none" stroke="${strokeColor}" stroke-width="3" stroke-linecap="round"/>
-        <!-- Dot at the bottom center of the semicircle -->
-        <circle cx="10" cy="10" r="2" fill="${strokeColor}" />
+      <svg width="16" height="16" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <!-- ✅ Smaller Half-Circle -->
+        <path d="M3,14 A7,7 0 0 1 17,14" fill="none" stroke="${strokeColor}" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- ✅ Smaller Dot at the Bottom -->
+        <circle cx="10" cy="15" r="1.5" fill="${strokeColor}" />
       </svg>
     `,
     className: '',
-    iconSize: [20, 20],
-    iconAnchor: [10, 10]
+    iconSize: [16, 16],  // ✅ Smaller icon size
+    iconAnchor: [8, 14]  // ✅ Adjust anchor to match smaller icon
   });
 }
 
 
+
+
 // Aircraft class representing one simulated aircraft.
 class Aircraft {
-  // initialOffset (meters) spaces aircraft along the route.
   constructor(startLat, startLng, endLat, endLng, speed, initialOffset = 0) {
-    // Save starting and destination coordinates.
     this.startLat = startLat;
     this.startLng = startLng;
     this.endLat = endLat;
     this.endLng = endLng;
-    this.speed = speed; // in m/s
-    
-    // Compute the course from start to destination.
+    this.speed = speed;
+
     this.course = calculateBearing(startLat, startLng, endLat, endLng);
-    
-    // Set the current position; apply an initialOffset if provided.
+
     if (initialOffset > 0) {
       var pos = move(startLat, startLng, this.course, initialOffset);
       this.currentLat = pos[0];
@@ -92,30 +91,55 @@ class Aircraft {
       this.currentLat = startLat;
       this.currentLng = startLng;
     }
-    
-    // Create the marker using the static aircraft icon.
+
+    // ✅ Create aircraft marker
     this.marker = L.marker([this.currentLat, this.currentLng], { icon: getAircraftIcon() }).addTo(map);
+
+    // ✅ Create track label (initially hidden)
+    this.trackLabel = L.marker([this.currentLat, this.currentLng], {
+      icon: L.divIcon({
+        className: 'track-label',
+        html: `<div class="track-info">Speed: ${this.speed.toFixed(1)} m/s</div>`,
+        iconSize: [80, 20],  // ✅ Adjust label size
+        iconAnchor: [0, 0]   // ✅ Positions text properly to the right
+      }),
+      interactive: false
+    }).addTo(map);
+    this.trackLabel.setOpacity(0); // Initially hidden
   }
-  
+
   update(dt) {
-    // Move the aircraft along its course.
+    var distance = this.speed * dt;
     var newPos = move(this.currentLat, this.currentLng, this.course, this.speed * dt);
     this.currentLat = newPos[0];
     this.currentLng = newPos[1];
-    
-    // If near destination, reset to the start.
+
     var distToDest = calculateDistance(this.currentLat, this.currentLng, this.endLat, this.endLng);
     if (distToDest < this.speed * dt) {
-      this.currentLat = this.startLat;
-      this.currentLng = this.startLng;
-      this.course = calculateBearing(this.startLat, this.startLng, this.endLat, this.endLng);
+        this.currentLat = this.startLat;
+        this.currentLng = this.startLng;
+        this.course = calculateBearing(this.startLat, this.startLng, this.endLat, this.endLng);
     }
-    
-    // Update the marker's position and icon.
+
     this.marker.setLatLng([this.currentLat, this.currentLng]);
-    this.marker.setIcon(getAircraftIcon());
+
+    var zoomLevel = map.getZoom(); // ✅ Ensure zoomLevel is defined
+
+    if (zoomLevel >= 10) {  // ✅ Show label at zoom 10+
+        var labelOffsetDegrees = 0.0025; // ✅ Moves label to the right
+
+        // ✅ Keep label static to the right of aircraft
+        var labelLat = this.currentLat;
+        var labelLng = this.currentLng + labelOffsetDegrees;
+
+        this.trackLabel.setLatLng([labelLat, labelLng]);
+        this.trackLabel.setOpacity(1); // ✅ Make label visible
+    } else {
+        this.trackLabel.setOpacity(0); // Hide label when zoomed out
+    }
   }
 }
+
 
 // Create an array to hold all aircraft.
 var aircrafts = [];
