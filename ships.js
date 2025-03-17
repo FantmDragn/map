@@ -146,7 +146,7 @@ class Ship {
     // Check current zoom level.
     var currentZoom = map.getZoom();
     // If zoomed out too far, remove/hide the line and exit early.
-    if (currentZoom < 20) {
+    if (currentZoom < 15) {
       if (this.speedLine) {
         map.removeLayer(this.speedLine);
         this.speedLine = null;
